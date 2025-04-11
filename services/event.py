@@ -1,151 +1,187 @@
 from sqlalchemy.exc import IntegrityError
 from urllib.parse import unquote
+import uuid
+import pudb
+from datetime import datetime
 from model import Session, Event, Comentario
-from schemas.event import EventSchema, EventBuscaSchema, EventViewSchema, \
-                            ListagemEventsSchema, EventDelSchema, apresenta_events, \
-                            apresenta_event, apresenta_events
+from schemas.event import (
+    EventSchema,
+    EventBuscaSchema,
+    EventViewSchema,
+    ListagemEventsSchema,
+    EventDelSchema,
+    apresenta_events,
+    apresenta_event
+)
 from logger import logger
+from flask import request
 
+#EventService
+# Responsible for communicating with the appointments database, GET, POST, PUT and DELETE, all operations use
+# the user id and the appointment id, preventing one user from modifying another's item.
 class EventService:
-    def add_event(form: EventSchema):
+    #POST
+    def add_event(body: EventSchema):
+        event_id = str(uuid.uuid4())
         event = Event(
-            name=form.name,
-            date=form.date,
-            type=form.type,
-            description=form.description,
-            observation=form.observation,
-            doctor_name=form.doctor_name,
-            location_name=form.location_name,
-            location_id=form.location_id,
-            doctor_id = form.doctor_id,
-            user_id = form.user_id)
-        
-        logger.debug(f"Adicionando event de name: '{event.name}'")
-        
+            id=event_id,
+            name=body.name,
+            date=body.date,
+            type=body.type,
+            description=body.description,
+            observation=body.observation,
+            doctor_name=body.doctor_name,
+            location_name=body.location_name,
+            location_id=body.location_id,
+            doctor_id=body.doctor_id,
+            user_id=body.user_id
+        )
+        logger.debug(f"Adicionando event de name: '{event.name}' com id: '{event.id}'")
         try:
-            # criando conexão com a base
             session = Session()
-            # adicionando event
             session.add(event)
-            # efetivando o camando de adição de novo item na tabela
             session.commit()
-            logger.debug(f"Adicionado event de name: '{event.name}'")
-            return apresenta_event(event), 200
-
+            logger.debug(f"Adicionado event de name: '{event.name}' com id: '{event.id}'")
+            return {"status": "ok", "msg": "Event adicionado com sucesso.", "data": apresenta_event(event)}, 200
         except IntegrityError as e:
-            # como a duplicidade do name é a provável razão do IntegrityError
-            error_msg = "Event de mesmo name já salvo na base :/"
-            logger.warning(f"Erro ao adicionar event '{event.name}', {error_msg}, {e}")
-            return {"message": error_msg}, 409
-
+            error_msg = f"Erro de integridade ao adicionar event: {e.orig if hasattr(e, 'orig') else str(e)}"
+            logger.warning(f"Erro ao adicionar event '{event.name}': {error_msg}")
+            return {"status": "error", "msg": error_msg, "data": {}}, 409
         except Exception as e:
-            # caso um erro fora do previsto
             error_msg = "Não foi possível salvar novo item :/"
             logger.info("****************** ERROR ****************************")
             logger.warning(e)
             logger.info("*************************************************************")
-            logger.warning(f"Erro ao adicionar event '{event.name}', {error_msg}, {e}")
-            return {"message": error_msg}, 400
-    
+            logger.warning(f"Erro ao adicionar event '{event.name}': {error_msg} - {e}")
+            return {"status": "error", "msg": error_msg, "data": {}}, 400
+
+    #GET
     def get_events():
-        logger.debug(f"Coletando events ")
-        # criando conexão com a base
+        logger.debug("Coletando events")
         session = Session()
-        # fazendo a busca
-        events = session.query(Event).all()
-
-        # logger.info("testando logger")
+        user_id = request.args.get("user_id")
+        if user_id:
+            events = session.query(Event).filter(Event.user_id == user_id).all()
+            logger.debug(f"{len(events)} events encontrados para user_id {user_id}")
+        else:
+            events = session.query(Event).all()
+            logger.debug(f"{len(events)} events encontrados (sem filtro)")
         if not events:
-            # se não há events cadastrados
-            return {"events": []}, 200
+            return {"status": "ok", "msg": "Nenhum event encontrado.", "data": []}, 200
         else:
-            logger.debug(f"%d events encontrados" % len(events))
-            # retorna a representação de event
-            print(events)
-            return apresenta_events(events), 200
-    
+            logger.debug(f"Retornando {len(events)} events")
+            teste = apresenta_events(events)
+            print(teste)
+            return {"status": "ok", "msg": "Events coletados com sucesso.", "data": apresenta_events(events)}, 200
+    #GET
     def get_event(query: EventBuscaSchema):
-        event_name = query.name
-        logger.debug(f"Coletando dados sobre event #{event_name}")
-        # criando conexão com a base
+        event_id = query.id
+        logger.debug(f"Coletando dados sobre event #{event_id}")
         session = Session()
-        # fazendo a busca
-        event = session.query(Event).filter(Event.name == event_name).first()
-
+        event = session.query(Event).filter(Event.name == event_id).first()
         if not event:
-            # se o event não foi encontrado
             error_msg = "Event não encontrado na base :/"
-            logger.warning(f"Erro ao buscar event '{event_name}', {error_msg}")
-            return {"message": error_msg}, 404
+            logger.warning(f"Erro ao buscar event '{event_id}': {error_msg}")
+            return {"status": "error", "msg": error_msg, "data": {}}, 404
         else:
-            logger.debug(f"Event econtrado: '{event.name}'")
-            # retorna a representação de event
-            return apresenta_event(event), 200
-    
-    def del_event(query: EventBuscaSchema):
-        event_name = unquote(unquote(query.name))
-        print(event_name)
-        logger.debug(f"Deletando dados sobre event #{event_name}")
-        # criando conexão com a base
-        session = Session()
-        # fazendo a remoção
-        count = session.query(Event).filter(Event.name == event_name).delete()
-        session.commit()
+            logger.debug(f"Event encontrado: '{event.id}'")
+            return {"status": "ok", "msg": "Event encontrado.", "data": apresenta_event(event)}, 200
 
+    #DELETE
+    def del_event_by_id_and_user(query: EventBuscaSchema):
+        """
+        Deleta um event específico utilizando os campos 'id' e 'user_id' informados no query.
+        Retorna no campo "data" os dados do event que foi deletado.
+        """
+        try:
+            event_id = query.id
+        except Exception as e:
+            return {"status": "error", "msg": f"Invalid id format: {str(e)}", "data": {}}, 400
+
+        user_id = query.user_id
+        if not user_id:
+            return {"status": "error", "msg": "Missing user_id in query", "data": {}}, 400
+
+        session = Session()
+        event = session.query(Event).filter(Event.id == event_id, Event.user_id == user_id).first()
+        if not event:
+            return {"status": "error", "msg": "Event não encontrado ou não pertence ao usuário", "data": {}}, 404
+
+        event_data = apresenta_event(event)
+        count = session.query(Event).filter(Event.id == event_id, Event.user_id == user_id).delete()
+        session.commit()
         if count:
-            # retorna a representação da mensagem de confirmação
-            logger.debug(f"Deletado event #{event_name}")
-            return {"message": "Event removido", "id": event_name}
+            return {"status": "ok", "msg": "Event removido", "data": event_data}, 200
         else:
-            # se o event não foi encontrado
-            error_msg = "Event não encontrado na base :/"
-            logger.warning(f"Erro ao deletar event #'{event_name}', {error_msg}")
-            return {"message": error_msg}, 404
-        
+            return {"status": "error", "msg": "Event não encontrado ou não pertence ao usuário", "data": {}}, 404
+
+    #PUT
+    def update_event(query: EventBuscaSchema, body: EventSchema):
+        """
+        Atualiza um event existente utilizando os campos 'id' e 'user_id' informados no query,
+        e os dados enviados no body.
+        Retorna uma representação do event atualizado.
+        """
+        event_id = query.id
+        user_id = query.user_id
+        session = Session()
+        event = session.query(Event).filter(Event.id == event_id, Event.user_id == user_id).first()
+        if not event:
+            error_msg = "Event não encontrado ou não pertence ao usuário"
+            logger.warning(f"Erro ao atualizar event '{event_id}': {error_msg}")
+            return {"status": "error", "msg": error_msg, "data": {}}, 404
+        try:
+            payload = body.dict(exclude_unset=True)
+            for key, value in payload.items():
+                if key == "type" and hasattr(value, "value"):
+                    value = value.value
+                setattr(event, key, value)
+            event.updated_at = datetime.now()
+            session.commit()
+            logger.debug(f"Event atualizado: '{event.id}'")
+            return {"status": "ok", "msg": "Event atualizado com sucesso.", "data": apresenta_event(event)}, 200
+        except IntegrityError as e:
+            session.rollback()
+            detail = e.orig if hasattr(e, 'orig') else str(e)
+            error_msg = f"Erro de integridade ao atualizar event: {detail}"
+            logger.warning(f"Erro ao atualizar event '{event.id}': {error_msg}")
+            return {"status": "error", "msg": error_msg, "data": {}}, 409
+        except Exception as e:
+            session.rollback()
+            error_msg = f"Não foi possível atualizar o event: {str(e)}"
+            logger.warning(f"Erro ao atualizar event '{event.id}': {error_msg}")
+            return {"status": "error", "msg": error_msg, "data": {}}, 400
+
+    #OTHER
+    #used to save comments on appointments items, but not used right now.
     def add_comentario(form):
         try:
-            event_id  = form.event_id
-
+            event_id = form.event_id
             if not event_id:
                 error_msg = "Event id inválido :/"
-                logger.warning(f"Operação inválida '{event_id}', {error_msg}")
-                return {"message": error_msg}, 404
-            
+                logger.warning(f"Operação inválida '{event_id}': {error_msg}")
+                return {"status": "error", "msg": error_msg, "data": {}}, 404
             logger.debug(f"Adicionando comentários ao event #{event_id}")
-            # criando conexão com a base
             session = Session()
-            # fazendo a busca pelo produto
             event = session.query(Event).filter(Event.id == event_id).first()
-
             if not event:
-                # se produto não encontrado
                 error_msg = "Event não encontrado na base :/"
-                logger.warning(f"Erro ao adicionar comentário ao event '{event_id}', {error_msg}")
-                return {"message": error_msg}, 404
-
-            # criando o comentário
+                logger.warning(f"Erro ao adicionar comentário ao event '{event_id}': {error_msg}")
+                return {"status": "error", "msg": error_msg, "data": {}}, 404
             texto = form.texto
             comentario = Comentario(texto)
-
-            # adicionando o comentário ao produto
             event.adiciona_comentario(comentario)
             session.commit()
-
             logger.debug(f"Adicionado comentário ao event #{event_id}")
-
-            # retorna a representação de doctor
-            return apresenta_event(event), 200
+            return {"status": "ok", "msg": "Comentário adicionado com sucesso.", "data": apresenta_event(event)}, 200
         except IntegrityError as e:
-                # como a duplicidade do nome é a provável razão do IntegrityError
-            error_msg = ""
-            logger.warning(f"Erro ao adicionar comentario, {error_msg}, {e}")
-            return {"message": error_msg}, 409
-
+            error_msg = f"Erro ao adicionar comentário, duplicidade detectada: {e.orig if hasattr(e, 'orig') else str(e)}"
+            logger.warning(f"Erro ao adicionar comentário: {error_msg}")
+            return {"status": "error", "msg": error_msg, "data": {}}, 409
         except Exception as e:
-            # caso um erro fora do previsto
-            error_msg = "Não foi possível salvar novo item :/ >> "
-            logger.warning("************************************* ERROR *****************************")
-            logger.warning(f"Erro ao adicionar comentário, {error_msg}, {e}")
-            logger.warning("*************************************        *****************************")
-
-            return {"message": error_msg}, 400
+            error_msg = f"Não foi possível salvar novo item: {str(e)}"
+            logger.info("****************** ERROR ****************************")
+            logger.warning(e)
+            logger.info("*************************************************************")
+            logger.warning(f"Erro ao adicionar comentário: {error_msg}")
+            return {"status": "error", "msg": error_msg, "data": {}}, 400

@@ -13,7 +13,6 @@ class DoctorSchema(BaseModel):
     email: str = ""
     phone: str = ""
     location_id: int = 1
-    specialty_id: int = 1
 
 
 
@@ -41,7 +40,6 @@ def apresenta_doctors(doctors: List[Doctor]):
             "email": doctor.email,
             "phone": doctor.phone,
             "observation": doctor.observation,
-            "specialty_id": doctor.specialty_id,
             "location_id": doctor.location_id,
         })
 
@@ -56,7 +54,6 @@ class DoctorViewSchema(BaseModel):
     email: str = ""
     phone: str = ""
     observation: str = ""
-    specialty_id: int = 1
     location_id: int = 1
     total_cometarios: int = 1
     comentarios:List[ComentarioSchema]
@@ -79,7 +76,6 @@ def apresenta_doctor(doctor: Doctor):
         "email": doctor.email,
         "phone": doctor.phone,
         "observation": doctor.observation,
-        "specialty_id": doctor.specialty_id,
         "location_id": doctor.location_id,
         "total_cometarios": len(doctor.comentarios),
         "comentarios": [{"texto": c.texto} for c in doctor.comentarios]

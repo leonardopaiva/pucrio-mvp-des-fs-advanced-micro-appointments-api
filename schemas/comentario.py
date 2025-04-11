@@ -8,7 +8,5 @@ class ComentarioSchema(BaseModel):
     user_id: Optional[int] = None
     doctor_id: Optional[int] = None
     location_id: Optional[int] = None
-    produto_id: Optional[int] = None
-    specialty_id: Optional[int] = None
     event_id: Optional[int] = None
     texto: str = "Só comprar se o preço realmente estiver bom!"

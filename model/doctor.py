@@ -21,7 +21,6 @@ class Doctor(Base):
     # além disso estudar como retornar o objeto com os dados do banco de dados, 
     # tanto para location_id, quando para specialty_id e não apenas, retornar o ID
     location_id = Column(Integer, ForeignKey("location.pk_location"), nullable=True)
-    specialty_id = Column(Integer, ForeignKey("specialty.pk_specialty"), nullable=False)
 
     # Definição do relacionamento entre o doctor e o comentário.
     # Essa relação é implicita, não está salva na tabela 'doctor',
@@ -35,7 +34,6 @@ class Doctor(Base):
                  phone: str,
                  observation: str,
                  location_id: int,
-                 specialty_id: int,
                  data_insercao:Union[DateTime, None] = None):
         """
         Cria um Doctor
@@ -49,7 +47,6 @@ class Doctor(Base):
         self.phone = phone
         self.observation = observation
         self.location_id = location_id
-        self.specialty_id = specialty_id
 
         # se não for informada, será o data exata da inserção no banco
         if data_insercao:
