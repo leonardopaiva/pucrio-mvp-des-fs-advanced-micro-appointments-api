@@ -27,23 +27,17 @@ After cloning the repository, navigate to the root directory through the termina
  
 > It is strongly recommended to use virtual environments such as virtualenv (https://virtualenv.pypa.io/en/latest/installation.html).
  
-```
-(env)$ pip install -r requirements.txt
-```
+```(env)$ pip install -r requirements.txt```
  
 This command installs the dependencies/libraries listed in the requirements.txt file.
  
 To run the API, simply execute:
  
-```
-(env)$ flask run --host 0.0.0.0 --port 5000
-````
+```(env)$ flask run --host 0.0.0.0 --port 5000```
 
 or
  
-```
-(env)$ flask run --host 0.0.0.0 --port 5000 --reload
-```
+```(env)$ flask run --host 0.0.0.0 --port 5000 --reload```
 
 Open [http://localhost:5000/#/](http://localhost:5000/#/) in your browser to check the API status.
 
@@ -54,9 +48,15 @@ Thanks to the MVP professors, Marisa Silva, Dieinison Braga and Carlos Rocha.
 ## About This Project
  
 This is the third MVP of the Full Stack Development Postgraduate Program at PUCRS University, Rio de Janeiro.
+
+**Main Component Gateway Api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api)  
+**APP**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-app](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-app)  
+**micro-auth-api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-auth-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-auth-api)  
+**micro-queue-api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-queue-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-queue-api)  
+**micro-appointments-api**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-appointments-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-appointments-api)  
+
+**youtube video presenting project**: [https://youtu.be/7QQ_WHTqXxk](https://youtu.be/7QQ_WHTqXxk)  
+**Live demo APP**: [https://pucriomvp3.leonardopaiva.com/](https://pucriomvp3.leonardopaiva.com/)  
  
-**Main component Gateway**: [https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api](https://github.com/leonardopaiva/pucrio-mvp-des-fs-advanced-micro-gateway-api)
-
-
 **Student**: Leonardo Souza Paiva  
 **Portfolio**: [www.leonardopaiva.com](http://www.leonardopaiva.com)
