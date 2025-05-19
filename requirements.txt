@@ -9,3 +9,4 @@ SQLAlchemy-Utils
 typing_extensions
 pudb
 pytest
+gunicorn
